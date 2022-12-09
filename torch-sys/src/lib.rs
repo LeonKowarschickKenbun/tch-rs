@@ -289,6 +289,10 @@ extern "C" {
         outputs: *const *mut C_tensor,
         noutputs: c_int,
     );
+
+    pub fn mobile_atm_load_str_on_device(data: *const c_char, sz: size_t, device: c_int) -> *mut CModule_;
+    pub fn mobile_atm_forward(m: *mut CModule_, args: *const *mut C_tensor, n: c_int) -> *mut C_tensor;
+    pub fn mobile_atm_forward_(m: *mut CModule_, args: *const *mut CIValue, n: c_int) -> *mut CIValue;
 }
 
 extern "C" {

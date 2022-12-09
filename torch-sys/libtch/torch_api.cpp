@@ -1,3 +1,4 @@
+#include<torch/csrc/jit/mobile/import.h>
 #include<torch/csrc/autograd/engine.h>
 #include<torch/csrc/jit/frontend/tracer.h>
 #include<torch/csrc/jit/runtime/graph_executor.h>
@@ -1455,6 +1456,44 @@ void ati_free(ivalue i) {
 
 void at_set_graph_executor_optimize(bool o) {
   torch::jit::setGraphExecutorOptimize(o);
+}
+
+
+////////////////////////
+
+
+mobile_module mobile_atm_load_str_on_device(char *data, size_t sz, int device) {
+  PROTECT(
+    std::istringstream stream(std::string(data, sz));
+    return new torch::jit::mobile::Module(torch::jit::_load_for_mobile(stream, device_of_int(device)));
+  )
+  return nullptr;
+}
+
+tensor mobile_atm_forward(mobile_module m, tensor *tensors, int ntensors) {
+  PROTECT(
+    std::vector<torch::jit::IValue> inputs;
+    for (int i = 0; i < ntensors; ++i)
+      inputs.push_back(*(tensors[i]));
+    torch::jit::IValue output = m->forward(std::move(inputs));
+    if (!output.isTensor())
+      throw std::invalid_argument("forward did not return a tensor");
+    return new torch::Tensor(output.toTensor());
+  )
+  return nullptr;
+}
+
+ivalue mobile_atm_forward_(mobile_module m,
+                    ivalue *ivalues,
+                    int nivalues) {
+  PROTECT(
+    std::vector<torch::jit::IValue> inputs;
+    for (int i = 0; i < nivalues; ++i)
+      inputs.push_back(*(ivalues[i]));
+    torch::jit::IValue output = m->forward(std::move(inputs));
+    return new torch::jit::IValue(output);
+  )
+  return nullptr;
 }
 
 #include "torch_api_generated.cpp.h"

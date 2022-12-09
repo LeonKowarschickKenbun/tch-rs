@@ -402,6 +402,59 @@ impl IValue {
         Ok(v)
     }
 }
+#[derive(Debug)]
+pub struct CMobileModule {
+    pub(super) c_module: *mut CModule_,
+}
+
+unsafe impl Send for CMobileModule {}
+unsafe impl Sync for CMobileModule {}
+
+impl Drop for CMobileModule {
+    fn drop(&mut self) {
+        println!("TODO impl drop for CMobileModule")
+    }
+}
+
+
+impl CMobileModule {
+    /// Performs the forward pass for a model on some specified tensor inputs.
+    pub fn forward_ts<T: Borrow<Tensor>>(&self, ts: &[T]) -> Result<Tensor, TchError> {
+        let ts: Vec<_> = ts.iter().map(|x| x.borrow().c_tensor).collect();
+        let c_tensor =
+            unsafe_torch_err!(mobile_atm_forward(self.c_module, ts.as_ptr(), ts.len() as c_int));
+        Ok(Tensor { c_tensor })
+    }
+
+    /// Performs the forward pass for a model on some specified ivalue inputs.
+    pub fn forward_is<T: Borrow<IValue>>(&self, ts: &[T]) -> Result<IValue, TchError> {
+        let ts = ts.iter().map(|x| x.borrow().to_c()).collect::<Result<Vec<_>, TchError>>()?;
+        let c_ivalue =
+            unsafe_torch_err!(mobile_atm_forward_(self.c_module, ts.as_ptr(), ts.len() as c_int));
+        for x in ts {
+            unsafe { ati_free(x) }
+        }
+        IValue::of_c(c_ivalue)
+    }
+
+    /// Loads a PyTorch saved JIT model from a read instance.
+    ///
+    /// This function loads the model directly on the specified device,
+    /// which means it also allows loading a GPU model on the CPU without having a CUDA enabled GPU.
+    pub fn load_data_on_device<T: std::io::Read>(
+        f: &mut T,
+        device: Device,
+    ) -> Result<CMobileModule, TchError> {
+        let mut buffer = Vec::new();
+        f.read_to_end(&mut buffer)?;
+        let buffer_ptr = buffer.as_ptr() as *const libc::c_char;
+        let c_module =
+            unsafe_torch_err!(mobile_atm_load_str_on_device(buffer_ptr, buffer.len(), device.c_int()));
+        Ok(CMobileModule { c_module })
+    }
+}
+
+
 
 /// A jit PyTorch module.
 ///

@@ -10,6 +10,7 @@ typedef torch::Tensor *tensor;
 typedef torch::Scalar *scalar;
 typedef torch::optim::Optimizer *optimizer;
 typedef torch::jit::script::Module *module;
+typedef torch::jit::mobile::Module *mobile_module;
 typedef torch::jit::IValue *ivalue;
 #define PROTECT(x) \
   try { \
@@ -251,6 +252,15 @@ bool tch_read_stream_stream_position(void *stream_ptr, uint64_t *pos);
 bool tch_read_stream_seek_start(void *stream_ptr, uint64_t pos, uint64_t *new_pos);
 bool tch_read_stream_seek_end(void *stream_ptr, int64_t pos, uint64_t *new_pos);
 bool tch_read_stream_read(void *stream_ptr, uint8_t *buf, size_t size, size_t *new_pos);
+
+
+/////////////////////////////////////////
+
+mobile_module mobile_atm_load_str_on_device(char *data, size_t sz, int device);
+tensor mobile_atm_forward(mobile_module m, tensor *tensors, int ntensors);
+ivalue mobile_atm_forward_(mobile_module m, ivalue *ivalues, int nivalues);
+
+
 
 #include "torch_api_generated.h"
 

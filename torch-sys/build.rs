@@ -178,6 +178,7 @@ fn make<P: AsRef<Path>>(libtorch: P, use_cuda: bool, use_hip: bool) {
                 .warnings(false)
                 .include(includes.join("include"))
                 .include(includes.join("include/torch/csrc/api/include"))
+                .include(includes.join("include/torch/csrc/jit/mobile"))
                 .flag(&format!("-Wl,-rpath={}", lib.join("lib").display()))
                 .flag("-std=c++14")
                 .flag(&format!("-D_GLIBCXX_USE_CXX11_ABI={}", libtorch_cxx11_abi))
@@ -195,6 +196,7 @@ fn make<P: AsRef<Path>>(libtorch: P, use_cuda: bool, use_hip: bool) {
                 .warnings(false)
                 .include(includes.join("include"))
                 .include(includes.join("include/torch/csrc/api/include"))
+                .include(includes.join("include/torch/csrc/jit/mobile"))
                 .file("libtch/torch_api.cpp")
                 .file(cuda_dependency)
                 .compile("tch");
